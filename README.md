@@ -1,10 +1,16 @@
 # fontend
+
 一本关于前端的书
 
 ## 目录
 
-* React技术栈
-  * 项目搭建
-  * 推荐方案
-* Vue技术栈
-  * 项目搭建
+* 基础知识
+  * HTML
+  * CSS
+  * JavaScript
+  * React
+  * Vue
+  * Redux
+* 项目实战
+  * webpack+react+react-redux
+  * webpack+vue+vuex
