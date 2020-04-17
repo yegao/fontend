@@ -43,21 +43,33 @@ o2.x = 2;
 o1 === o2; // true
 ```
 
-#### Boolean类型
+#### 布尔类型
 
 Boolean表示逻辑实体，具有两种值：true和false。
 
-#### Null类型
+#### null和undefined
 
-Null类型只有一个值：null。
+null用于描述一个“空值”，对null执行typeof运算，会得到"object"。
+undefined表示值的空缺，用未定义的值表示更深层次的“空值”。它是变量的一种取值，表示变量没有初始化。
 
-#### Undefined类型
+* 如果查询对象的属性或则数组元素的值时返回undefined，则表示这个属性或者元素不存在。
+* 如果函数没有返回任何值，则返回undefined。
+* 引用没有提供实参的函数形参也只会得到undefined。
 
-Undefined类型只有一个值：undefined，未主动分配值的变量的默认值就是undefined。
+undefined一开始的时候是一个预定义的全局变量（它和null不一样，它不是一个关键字），它的值就是“未定义”。在ECMAScript3中，undefined是可读/写的变量，可以给它赋任意的值。这个错误在ECMAScript5中做了修正，undefined在该版本中是只读的。如果使用typeof运算符得到undefined的类型，则返回"undefined"，表明这个值是这个类型的唯一成员。
 
-#### Number类型
+尽管null和undefined是不同的，但是它们都表示“值的空缺”，两者往往可以互换。判断相等运算符“==”认为两者是相等的（所以我们需要要使用“===”严格相等运算符来区分他们）。
 
-Number类型是双精度64位二进制格式IEEE 754值（负2的53次方减1 到 正2的53次方减1之间的数字）。除了表示浮点数，数字类型还具有三个符号值：+ Infinity，-Infinity和NaN（"非数字"）。要检查±Infinity内的最大可用值或最小可用值，可以使用常数Number.MAX_VALUE或Number.MIN_VALUE。
+```js
+null == undefined; //true
+null === undefined; // false
+```
+
+> 个人做法：一般我在实际项目中，我会将undefined作为系统级、出乎意料的或者类似错误的值的空缺，而null是表示程序级，正常的或者是在意料之中的值的空缺。如果想将它们赋值给变量或者属性，或者将它们作为参数传入函数，最佳选择是使用null。
+
+#### 数字类型
+
+数字类型是双精度64位二进制格式IEEE 754值（负2的53次方减1 到 正2的53次方减1之间的数字）。除了表示浮点数，数字类型还具有三个符号值：+ Infinity，-Infinity和NaN（"非数字"）。要检查±Infinity内的最大可用值或最小可用值，可以使用常数Number.MAX_VALUE或Number.MIN_VALUE。
 
 #### BigInt类型
 
@@ -80,10 +92,6 @@ String类型用于表示文本数据。它是由一组16位无符号整数值的
 #### Symbol类型
 
 Symbol类型的值是唯一且不可变的原始值，可以用作Object属性的键。
-
-### 对象
-
-在计算机科学中，对象是内存中的值，可能由标识符引用。在JavaScript中，对象可以看作是属性的集合。使用`{}`语法，可以初始化一组有限的属性，然后就可以添加和删除属性。属性值可以是任何类型的值，包括其他对象，从而可以构建复杂的数据结构。键值可以是String类型的值或Symbol类型的值。
 
 ### 小结
 
