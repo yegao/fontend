@@ -93,6 +93,26 @@ String类型用于表示文本数据。它是由一组16位无符号整数值的
 
 Symbol类型的值是唯一且不可变的原始值，可以用作Object属性的键。
 
+### 包装对象
+
+观察以下下面字符串的用法
+
+```js
+var s = "hello world";
+var world = s.substring(6, s.length);
+```
+
+我们前面说了，字符串类型是原始类型，不是对象，但是它为什么可以和对象一样有属性呢（比如上面例子中的substring、length）？这是因为只要引用了字符串s的属性，JavaScript就会将字符串值通过调用new String(s)的方式转化成对象，这个对象继承了字符串的方法，并被用来处理属性的引用。一旦属性引用结束，这个新创建的对象就会销毁（其实在实现上并不一定创建或者销毁这个临时对象，然而整个过程看起来就是这样）。
+同字符串一样，数字和布尔值也具有各自的方法（通过Number()和Boolean()构造函数创建一个临时对象，这些方法的调用均是来自于这个临时对象）。
+
+```js
+4.toFloat(); // Uncaught SyntaxError: Invalid or unexpected token 报错是因为JavaScript将这里的点当作小数点了
+4..toFloat(); // 4
+(-2.4).abs(); // 2.4
+```
+
+null和undefined没有包装对象，访问它们的属性的时候会造成一个类型错误。
+
 ### 小结
 
 最新的ECMAScript标准定义了7种原始类型，其中6中原始类型可以用typeof运算符检测:
