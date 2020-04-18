@@ -234,3 +234,150 @@ JavaScript采用了词法作用域，函数的执行依赖于变量的作用域�
   /* 测试 */
   o.inner(); // "x"
   ```
+
+### 迭代器协议和可迭代协议
+
+迭代器协议定义了一种标准的方式来产生一个`有限或无限序列的值`，并且当所有的值都已经被迭代后，就会有一个默认的返回值。当一个对象满足下述条件就会被认为是一个`迭代器`：
+
+  1. 它实现了一个`next()`的方法，该方法返回一个对象，该对象必须要有`done`和`value`这两个属性。
+  2. 如果`迭代器`已经超过了可迭代次数，值为`true`,这种情况下,`value`的值可以被省略。  
+  3. 如果`迭代器`可以产生序列中的下一个值，则为`false`,这种情况下,可以`done`的值可以被省略。
+
+  ```js
+  var myIterator = {
+      next: function() {
+          // ...
+          // return {
+          //   done: ...
+          //   value: ...
+          // }
+      }
+  }
+  ```
+
+可迭代协议允许JS对象去定义它们的迭代行为, 例如在一个`for..of`结构中什么值可以被循环。一些内置类型都是内置的可迭代类型并且有默认的迭代行为, 比如`Array`、`Map`等, 另一些类型则不是 (比如普通的`Object`)。可迭代协议就是对象的[Symbol.iterator]是一个无参函数，该函数返回一个`迭代器`(Iterator)。
+
+### 可迭代对象
+
+满足`可迭代协议`的对象就是`可迭代对象`。（）
+
+```js
+var o = {
+    [Symbol.iterator]: function() {
+      return {
+        next: function() {
+          // ...
+          // return {
+          //   done: ...
+          //   value: ...
+          // }
+        }
+      }
+    }
+}
+```
+
+为了变成可迭代对象， 该对象必须实现`@@iterator`方法, 即必须有一个名字是`Symbol.iterator`的属性。当可迭代对象在被迭代的时候（比如要用于`for..of`中），它的`@@iterator`方法将被调用，然后返回一个用于在迭代中获得值的`迭代器`。
+
+`Array`、`Map`、`Set`、`String`、`TypedArray`等类型的对象、`函数的arguments对象`、`NodeList对象`都是可迭代的对象
+
+`for...of`会获取可迭代对象的`[Symbol.iterator]()`执行的结果，对该`迭代器`逐次调用`next()`，直到`迭代器`返回对象的`done`属性为`true`时，遍历结束。
+
+这里手写一个迭代器
+
+```js
+var it = createIterator(["a", "b"]);
+it.next(); // { value: "a", done: false }
+it.next(); // { value: "b", done: false }
+it.next(); // { value: undefined, done: true }
+function createIterator(arr) {
+  var index = 0;
+  return {
+    next: function() {
+      return index < arr.length
+        ? { value: arr[index++], done: false }
+        : { value: undefined, done: true };
+    },
+  };
+}
+```
+
+更进一步，手写一个迭代器，并使之可迭代
+
+```js
+function createIterator(array) {
+  var nextIndex = 0;
+  return {
+    next: function() {
+      return nextIndex < array.length
+        ? { value: array[nextIndex++], done: false }
+        : { value: undefined, done: true };
+    },
+    [Symbol.iterator]: function () {
+        return this // 注意这里是对象调用模式，this指向的就是上层的对象，`迭代器`
+    }
+  };
+}
+
+var iterator = createIterator([1, 2, 3]);
+console.log(...iterator);
+```
+
+手动创建`迭代器`比较麻烦，所以ES6推出生成器函数语法糖`function*`，方便创建`迭代器`。
+
+```js
+function *fn(){
+  yield 1
+  yield 2
+  yield 3
+};
+
+var foo = fn();
+// foo满足`迭代器协议`，是`迭代器`
+foo.next();     // {value: 1, done: false}
+foo.next();     // {value: 2, done: false}
+foo.next();     // {value: 3, done: false}
+foo.next();     // {value: undefined, done: true}
+// foo[Symbol.iterator]是一个无参函数，该函数执行后返回生成器对象本身（是`迭代器`），所以是`可迭代对象`
+foo[Symbol.iterator]() === foo;   // true
+// 可以被迭代
+var foo1 = fn()
+[...foo1]   // [1, 2, 3]
+```
+
+如果在生成器中return一个值，此时会将`done`置为`true`，value就会编程return的那个值时迭代即结束。
+
+```js
+function *fn() {
+  yield 1;
+  return 42;
+  yield 2;
+}
+
+let foo1 = fn();
+foo1.next();           // {value: 1, done: false}
+foo1.next();           // {value: 42, done: true}
+foo1.next();           // {value: undefined, done: true}
+
+let foo2 = fn();
+console.log(...foo2);  // 1
+```
+
+另外关于生成器还有另外一种用法，叫生成器委托（yield*）
+
+```js
+function* g1() {
+  yield 1;
+  yield 2;
+}
+
+function* g2() {
+  yield* g1();      // 委托给g1
+  yield* [3, 4];    // 委托给[3, 4]
+  yield* "56";      // 委托给"56"
+  yield* arguments; // 委托给arguments
+}
+
+var generator = g2(7, 8);
+console.log(...generator);   // 1 2 3 4 "5" "6" 7 8
+```
