@@ -235,6 +235,15 @@ JavaScript采用了词法作用域，函数的执行依赖于变量的作用域�
   o.inner(); // "x"
   ```
 
+### 继承和原型链
+
+JavaScript是动态的，本身是不提供class实现的（在ES6中引入了class关键字，但是那只是语法糖，JavaScript仍然是基于原型的）。
+当谈到继承的时候JavaScript只有一种结构：对象。每个实例对象都有一个私有属性（__proto__）指向它的构造函数的原型对象（prototype）。该原型对象也有一个自己的私有属性（__proto__），这样一层层，直到一个对象的私有属性（__proto__）指向null。根据定义，null没有原型，并作为这个原型链中的最后一环。
+几乎所有的JavaScript对象都是位于原型链顶端的Object的实例。
+遵循ECMAScript标准，someObject.[[Prototype]] 符号是用于指向 someObject 的原型。从 ECMAScript 6 开始，[[Prototype]] 可以通过 Object.getPrototypeOf() 和 Object.setPrototypeOf() 访问器来访问。这个等同于 JavaScript 的非标准但许多浏览器实现的属性 __proto__。
+
+但它不应该与构造函数 func 的 prototype 属性相混淆。被构造函数创建的实例对象的 [[prototype]] 指向 func 的 prototype 属性。Object.prototype 属性表示 Object 的原型对象。
+
 ### 迭代器协议和可迭代协议
 
 迭代器协议定义了一种标准的方式来产生一个`有限或无限序列的值`，并且当所有的值都已经被迭代后，就会有一个默认的返回值。当一个对象满足下述条件就会被认为是一个`迭代器`：
@@ -255,7 +264,7 @@ JavaScript采用了词法作用域，函数的执行依赖于变量的作用域�
   }
   ```
 
-可迭代协议允许JS对象去定义它们的迭代行为, 例如在一个`for..of`结构中什么值可以被循环。一些内置类型都是内置的可迭代类型并且有默认的迭代行为, 比如`Array`、`Map`等, 另一些类型则不是 (比如普通的`Object`)。可迭代协议就是对象的[Symbol.iterator]是一个无参函数，该函数返回一个`迭代器`(Iterator)。
+和迭代器协议关系比较紧密的另一个协议是可迭代协议，可迭代协议允许JS对象去定义它们的迭代行为, 例如在一个`for..of`结构中什么值可以被循环。一些内置类型都是内置的可迭代类型并且有默认的迭代行为, 比如`Array`、`Map`等, 另一些类型则不是 (比如普通的`Object`)。可迭代协议就是对象的[Symbol.iterator]是一个无参函数，该函数返回一个`迭代器`(Iterator)。
 
 ### 可迭代对象
 
