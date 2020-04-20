@@ -244,6 +244,145 @@ JavaScript是动态的，本身是不提供class实现的（在ES6中引入了cl
 
 但它不应该与构造函数 func 的 prototype 属性相混淆。被构造函数创建的实例对象的 [[prototype]] 指向 func 的 prototype 属性。Object.prototype 属性表示 Object 的原型对象。
 
+### Map
+
+#### Map和WeakMap的区别
+
+----
+答：  
+1、`Map`可以遍历，方法很多可以跟各种数据格式转换。  
+2、`WeakMap`只接受对象作为键名（null除外），不接受其他类型的值作为键名。
+
+```js
+const map = new WeakMap();
+map.set(1, 2); // 报错
+map.set(null, 2); // 报错
+```
+
+3、`WeakMap`的键名引用对象的方式是弱引用。
+4、`WeakMap`不能遍历，方法有get、set、has、delete。
+
+#### 怎么理解WeakMap的键名引用对象的方式是弱引用
+
+----
+答：  
+先谈一谈什么是`弱引用`：
+`弱引用`与`强引用`相对，是指不能确保其引用的对象不会被垃圾回收器回收的引用。 一个对象若只被`弱引用`所引用，则该对象可能在任何时刻被回收。
+在 JavaScript 中，一般我们创建一个对象，都是建立一个强引用：
+
+```js
+var obj = new Object();
+```
+
+只有当我们手动设置`obj = null`的时候，才有可能回收`obj`所引用的对象。
+
+而如果我们能创建一个弱引用的对象：
+
+```js
+// 假设可以这样创建一个
+var obj = CreateWeakObject();
+```
+
+我们什么都不用做，只用静静的等待垃圾回收机制执行，`obj`所引用的对象就会被回收。
+
+我们再来看看这句：
+`WeakMaps`保持了对键名所引用的对象的弱引用，正常情况下，我们举个例子：
+
+```js
+let key = new Array(5);
+let arr = [key, 1];
+```
+
+使用这种方式，我们其实建立了`arr`对`key`所引用的对象(我们假设这个真正的对象叫`realObject`)的强引用。
+
+所以当你设置`key = null`时，只是去掉了`key`对`realObject`的强引用，并没有去除`arr`对`realObject`的强引用，所以`realObject`还是不会被回收掉。  
+写一个测试的例子
+
+```js
+const wm = new WeakMap();
+let key = new Array(5 *1024* 1024);
+wm.set(key, 1);
+key = null;
+```
+
+当我们设置`wm.set(key, 1)`时，其实建立了`wm`对`key`所引用的对象的弱引用，但因为`let key = new Array(5 *1024* 1024)`建立了`key`对所引用对象的`强引用`，被引用的对象并不会被回收，但是当我们设置`key = null`的时候，就只有`wm`对所引用对象的弱引用，下次垃圾回收机制执行的时候，该引用对象就会被回收掉。
+
+我们用 Node 证明一下：
+
+```bash
+node --expose-gc
+```
+
+global.gc();
+process.memoryUsage(); // heapUsed: 4638992 ≈ 4.4M
+
+const wm = new WeakMap();
+let key = new Array(5 *1024* 1024);
+wm.set(key, 1);
+global.gc();
+process.memoryUsage(); // heapUsed: 46776176 ≈ 44.6M
+
+key = null;
+global.gc();
+process.memoryUsage(); // heapUsed: 4800792 ≈ 4.6M
+所以 `WeakMap`可以帮你省掉手动删除对象关联数据的步骤，所以当你不能或者不想控制关联数据的生命周期时就可以考虑使用 WeakMap。
+
+总结这个弱引用的特性，即垃圾回收机制不将该种引用考虑在内。只要所引用的对象的其他引用都被清除，垃圾回收机制就会释放该对象所占用的内存。也就是说，一旦不再需要，`WeakMap`里面的键名对象和所对应的键值对会自动消失，不用手动删除引用。正是因为这样的特性，`WeakMap`内部有多少个成员，取决于垃圾回收机制有没有运行，运行前后很可能成员个数是不一样的，而垃圾回收机制何时运行是不可预测的，因此`ES6`规定`WeakMap`不可遍历。所以 `WeakMap`不像 Map，一是没有遍历操作（即没有keys()、values()和entries()方法），也没有 size 属性，也不支持 clear 方法，所以 WeakMap只有四个方法可用：get()、set()、has()、delete()。
+
+#### wakMap有哪些应用场景
+
+----
+答：  
+1、 在 DOM 对象上保存相关数据
+传统使用 jQuery 的时候，我们会通过 $.data() 方法在 DOM 对象上储存相关信息(就比如在删除按钮元素上储存帖子的 ID 信息)，jQuery 内部会使用一个对象管理 DOM 和对应的数据，当你将 DOM 元素删除，DOM 对象置为空的时候，相关联的数据并不会被删除，你必须手动执行 $.removeData() 方法才能删除掉相关联的数据，`WeakMap`就可以简化这一操作：
+
+```js
+let wm = new WeakMap(), element = document.querySelector(".element");
+wm.set(element, "data");
+let value = wm.get(elemet);
+console.log(value); // data
+element.parentNode.removeChild(element);
+element = null;
+```
+
+2、数据缓存
+当我们需要关联对象和数据，比如在不修改原有对象的情况下储存某些属性或者根据对象储存一些计算的值等，而又不想手动控制回收这些数据时非常适合考虑使用WeakMap。
+
+```js
+const cache = new WeakMap();
+function countOwnKeys(key) {
+    if (cache.has(key)) {
+        console.log('已经缓存过该数据的长度');
+        return cache.get(key);
+    } else {
+        console.log('正在缓存该数据的长度');
+        const count = Object.keys(key).length;
+        cache.set(key, count);
+        return count;
+    }
+}
+```
+
+3、私有属性
+`WeakMap`也可以被用于实现私有变量，不过在`ES6`中实现私有变量的方式有很多种，这只是其中一种：
+
+```js
+const privateData = new WeakMap();
+class Person {
+    constructor(name, age) {
+        privateData.set(this, { name: name, age: age });
+    }
+    getName() {
+        return privateData.get(this).name;
+    }
+    getAge() {
+        return privateData.get(this).age;
+    }
+}
+
+export default Person;
+```
+
 ### 迭代器协议和可迭代协议
 
 迭代器协议定义了一种标准的方式来产生一个`有限或无限序列的值`，并且当所有的值都已经被迭代后，就会有一个默认的返回值。当一个对象满足下述条件就会被认为是一个`迭代器`：
